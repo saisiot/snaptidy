@@ -12,7 +12,7 @@
   [![Python 버전](https://img.shields.io/badge/python-3.7%2B-brightgreen)](https://www.python.org/downloads/)
   [![Homebrew](https://img.shields.io/badge/homebrew-available-orange)](https://brew.sh/)
 
-  [🇺🇸 English](README.md) | [🇰🇷 한국어](README.ko.md)
+  [🇺🇸 English](README.md) | [🇰🇷 한국어](README-ko.md)
 </div>
 
 ## 🔍 What is SnapTidy?
