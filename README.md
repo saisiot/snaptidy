@@ -7,7 +7,6 @@
   </p>
 
   **Clean up your photo library with a single command.**
-  **단 한 번의 명령으로 사진 라이브러리를 정리하세요.**
   
   [![라이선스: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
   [![Python 버전](https://img.shields.io/badge/python-3.7%2B-brightgreen)](https://www.python.org/downloads/)
