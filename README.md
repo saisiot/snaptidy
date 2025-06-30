@@ -180,3 +180,29 @@ SnapTidy is licensed under the MIT License - see the [LICENSE](LICENSE) file for
 <div align="center">
   <i>Made with ❤️ for people who hate messy photo libraries</i>
 </div>
+
+## 🖥️ GUI Version
+
+SnapTidy now includes a beautiful and intuitive GUI application!
+
+### Features
+- **Modern Interface**: Clean, professional design with drag-and-drop support
+- **Visual Progress**: Real-time progress bars and status updates
+- **Easy Settings**: Intuitive controls for all SnapTidy options
+- **Cross-Platform**: Works on Windows, macOS, and Linux
+
+### Launch GUI
+```bash
+snaptidy-gui
+```
+
+### GUI Screenshots
+- **Main Interface**: Folder selection, settings panel, and action buttons
+- **Progress Tracking**: Real-time progress with detailed status messages
+- **Results Display**: Clear feedback on operation completion
+
+### GUI Features
+- 📁 **Drag & Drop**: Simply drag folders onto the interface
+- ⚙️ **Visual Settings**: Adjust sensitivity, threads, and options with sliders
+- 📊 **Live Progress**: See exactly what's happening during operations
+- 🎨 **Modern Design**: Professional appearance that matches your OS
