@@ -34,8 +34,30 @@ snaptidy organize --date-format yearmonth
 
 ### 📁 Flatten Directories
 - Move all files from subdirectories into the current directory
+- **Optionally copy all files into a separate 'flattened' folder instead of moving them**
 - Automatically handle filename conflicts with smart renaming
 - Get rid of complex nested folder structures with one command
+
+#### New Options
+| Option      | Description |
+|-------------|-------------|
+| `--copy`    | Copy files instead of moving them. All files will be copied into a new folder (default: `<path>/flattened`). |
+| `--output`  | Output directory for flattened files (used only with `--copy`). |
+
+#### Disk Space Safety
+- When using `--copy`, SnapTidy checks if there is enough free disk space before copying. If not, the operation is aborted with a warning.
+
+#### Example Usage
+```bash
+# Move all files into the current directory (default)
+snaptidy flatten --path /path/to/folder
+
+# Copy all files into a new 'flattened' folder (recommended for large disks)
+snaptidy flatten --path /path/to/folder --copy
+
+# Copy all files into a custom output folder
+snaptidy flatten --path /path/to/folder --copy --output /path/to/output_folder
+```
 
 ### 🔍 Smart Deduplication
 - Find and remove exact duplicates using SHA256 hash comparison

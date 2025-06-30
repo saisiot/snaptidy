@@ -30,4 +30,8 @@ dependencies = [
 "Bug Tracker" = "https://github.com/saisiot/snaptidy/issues"
 
 [project.scripts]
-snaptidy = "snaptidy.cli:main"
+snaptidy = "snaptidy.snaptidy.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["snaptidy*"]
