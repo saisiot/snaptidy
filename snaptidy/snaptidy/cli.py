@@ -18,9 +18,9 @@ except ImportError:
     RICH_AVAILABLE = False
     logging.warning("Rich library not available. Using basic logging.")
 
-from . import flatten
-from . import dedup
-from . import organize
+import snaptidy.snaptidy as flatten
+import snaptidy.snaptidy as dedup
+import snaptidy.snaptidy as organize
 
 
 if RICH_AVAILABLE:
@@ -62,7 +62,7 @@ def setup_logging(log_file: Optional[str] = None, verbose: bool = False) -> None
 
 def flatten_command(args) -> None:
     """Handle the flatten subcommand."""
-    flatten.run(
+    snaptidy.snaptidy.flatten.run(
         path=args.path,
         dry_run=args.dry_run,
         copy=args.copy,
@@ -73,7 +73,7 @@ def flatten_command(args) -> None:
 
 def dedup_command(args) -> None:
     """Handle the dedup subcommand."""
-    dedup.run(
+    snaptidy.snaptidy.dedup.run(
         path=args.path,
         sensitivity=args.sensitivity,
         dry_run=args.dry_run,
@@ -85,7 +85,7 @@ def dedup_command(args) -> None:
 
 def organize_command(args) -> None:
     """Handle the organize subcommand."""
-    organize.run(
+    snaptidy.snaptidy.organize.run(
         path=args.path,
         date_format=args.date_format,
         dry_run=args.dry_run,

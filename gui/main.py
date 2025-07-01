@@ -29,7 +29,7 @@ from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
 from PyQt6.QtGui import QFont, QIcon, QPixmap
 from datetime import datetime
 
-from .widgets import FolderSelector, ProgressWidget
+from gui.widgets import FolderSelector, ProgressWidget
 from snaptidy import flatten, dedup, organize
 
 
