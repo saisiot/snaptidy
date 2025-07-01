@@ -67,7 +67,7 @@ jobs:
         tar -czf snaptidy-complete-v0.1.0b1.tar.gz complete/
     
     - name: Upload macOS artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: macos-builds
         path: |
@@ -135,7 +135,7 @@ jobs:
         powershell Compress-Archive -Path complete-windows-x64 -DestinationPath snaptidy-complete-windows-x64-v0.1.0b1.zip
     
     - name: Upload Windows artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: windows-builds
         path: |
@@ -149,7 +149,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     steps:
     - name: Download all artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         path: artifacts
     
