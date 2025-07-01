@@ -4,17 +4,32 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "snaptidy"
-version = "0.1.0"
+version = "0.1.0b1"
 authors = [
     {name = "Yongsok Kwon", email = "saisiot.dev@gmail.com"},
 ]
-description = "A CLI tool for organizing files and removing duplicates from directories"
+description = "A powerful CLI and GUI tool for organizing photo libraries and removing duplicates"
 readme = "README.md"
 requires-python = ">=3.7"
+license = {text = "MIT"}
+keywords = ["photo", "organization", "deduplication", "file-management", "gui", "cli"]
 classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Multimedia :: Graphics :: Graphics Conversion",
+    "Topic :: System :: Filesystems",
+    "Topic :: Utilities",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
 ]
 dependencies = [
     "pillow>=9.0.0",
@@ -29,6 +44,8 @@ dependencies = [
 [project.urls]
 "Homepage" = "https://github.com/saisiot/snaptidy"
 "Bug Tracker" = "https://github.com/saisiot/snaptidy/issues"
+"Documentation" = "https://github.com/saisiot/snaptidy#readme"
+"Source Code" = "https://github.com/saisiot/snaptidy"
 
 [project.scripts]
 snaptidy = "snaptidy.snaptidy.cli:main"
