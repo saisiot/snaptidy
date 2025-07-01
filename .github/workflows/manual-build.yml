@@ -1,0 +1,49 @@
+name: Manual Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build for'
+        required: true
+        default: 'windows'
+        type: choice
+        options:
+        - windows
+        - macos
+        - all
+
+jobs:
+  build:
+    runs-on: ${{ github.event.inputs.platform == 'macos' && 'macos-latest' || 'windows-latest' }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build executables
+      run: |
+        if [ "${{ github.event.inputs.platform }}" = "macos" ] || [ "${{ github.event.inputs.platform }}" = "all" ]; then
+          pyinstaller snaptidy-gui-macos.spec --clean
+          pyinstaller snaptidy-cli-macos.spec --clean
+        fi
+        
+        if [ "${{ github.event.inputs.platform }}" = "windows" ] || [ "${{ github.event.inputs.platform }}" = "all" ]; then
+          pyinstaller snaptidy-gui-windows.spec --clean
+          pyinstaller snaptidy-cli-windows.spec --clean
+        fi
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ github.event.inputs.platform }}-builds
+        path: dist/ 

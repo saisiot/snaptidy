@@ -1,0 +1,186 @@
+name: Build SnapTidy
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build macOS GUI
+      run: |
+        pyinstaller snaptidy-gui-macos.spec --clean
+    
+    - name: Build macOS CLI
+      run: |
+        pyinstaller snaptidy-cli-macos.spec --clean
+    
+    - name: Create release directories
+      run: |
+        mkdir -p release/v0.1.0b1/gui-macos-arm64
+        mkdir -p release/v0.1.0b1/cli
+        mkdir -p release/v0.1.0b1/complete
+    
+    - name: Copy GUI files
+      run: |
+        cp dist/snaptidy-gui release/v0.1.0b1/gui-macos-arm64/
+        cp logo.png release/v0.1.0b1/gui-macos-arm64/
+        cp README.md release/v0.1.0b1/gui-macos-arm64/
+        cp README-ko.md release/v0.1.0b1/gui-macos-arm64/
+        cp LICENSE release/v0.1.0b1/gui-macos-arm64/
+        cp CHANGELOG.md release/v0.1.0b1/gui-macos-arm64/
+    
+    - name: Copy CLI files
+      run: |
+        cp dist/snaptidy release/v0.1.0b1/cli/
+        cp README.md release/v0.1.0b1/cli/
+        cp README-ko.md release/v0.1.0b1/cli/
+        cp LICENSE release/v0.1.0b1/cli/
+        cp CHANGELOG.md release/v0.1.0b1/cli/
+    
+    - name: Create complete package
+      run: |
+        cp -r release/v0.1.0b1/gui-macos-arm64/* release/v0.1.0b1/complete/
+        cp release/v0.1.0b1/cli/snaptidy release/v0.1.0b1/complete/
+    
+    - name: Create macOS packages
+      run: |
+        cd release/v0.1.0b1
+        tar -czf snaptidy-gui-macos-arm64-v0.1.0b1.tar.gz gui-macos-arm64/
+        tar -czf snaptidy-cli-v0.1.0b1.tar.gz cli/
+        tar -czf snaptidy-complete-v0.1.0b1.tar.gz complete/
+    
+    - name: Upload macOS artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: macos-builds
+        path: |
+          release/v0.1.0b1/snaptidy-gui-macos-arm64-v0.1.0b1.tar.gz
+          release/v0.1.0b1/snaptidy-cli-v0.1.0b1.tar.gz
+          release/v0.1.0b1/snaptidy-complete-v0.1.0b1.tar.gz
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build Windows GUI
+      run: |
+        pyinstaller snaptidy-gui-windows.spec --clean
+    
+    - name: Build Windows CLI
+      run: |
+        pyinstaller snaptidy-cli-windows.spec --clean
+    
+    - name: Create release directories
+      run: |
+        mkdir -p release/v0.1.0b1/gui-windows-x64
+        mkdir -p release/v0.1.0b1/cli-windows-x64
+        mkdir -p release/v0.1.0b1/complete-windows-x64
+    
+    - name: Copy GUI files
+      run: |
+        copy dist\snaptidy-gui.exe release\v0.1.0b1\gui-windows-x64\
+        copy logo.png release\v0.1.0b1\gui-windows-x64\
+        copy README.md release\v0.1.0b1\gui-windows-x64\
+        copy README-ko.md release\v0.1.0b1\gui-windows-x64\
+        copy LICENSE release\v0.1.0b1\gui-windows-x64\
+        copy CHANGELOG.md release\v0.1.0b1\gui-windows-x64\
+    
+    - name: Copy CLI files
+      run: |
+        copy dist\snaptidy.exe release\v0.1.0b1\cli-windows-x64\
+        copy README.md release\v0.1.0b1\cli-windows-x64\
+        copy README-ko.md release\v0.1.0b1\cli-windows-x64\
+        copy LICENSE release\v0.1.0b1\cli-windows-x64\
+        copy CHANGELOG.md release\v0.1.0b1\cli-windows-x64\
+    
+    - name: Create complete package
+      run: |
+        xcopy release\v0.1.0b1\gui-windows-x64\* release\v0.1.0b1\complete-windows-x64\ /E /Y
+        copy release\v0.1.0b1\cli-windows-x64\snaptidy.exe release\v0.1.0b1\complete-windows-x64\
+    
+    - name: Create Windows packages
+      run: |
+        cd release/v0.1.0b1
+        powershell Compress-Archive -Path gui-windows-x64 -DestinationPath snaptidy-gui-windows-x64-v0.1.0b1.zip
+        powershell Compress-Archive -Path cli-windows-x64 -DestinationPath snaptidy-cli-windows-x64-v0.1.0b1.zip
+        powershell Compress-Archive -Path complete-windows-x64 -DestinationPath snaptidy-complete-windows-x64-v0.1.0b1.zip
+    
+    - name: Upload Windows artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: windows-builds
+        path: |
+          release/v0.1.0b1/snaptidy-gui-windows-x64-v0.1.0b1.zip
+          release/v0.1.0b1/snaptidy-cli-windows-x64-v0.1.0b1.zip
+          release/v0.1.0b1/snaptidy-complete-windows-x64-v0.1.0b1.zip
+
+  create-release:
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          artifacts/macos-builds/*.tar.gz
+          artifacts/windows-builds/*.zip
+        body: |
+          ## SnapTidy v0.1.0b1 Release
+          
+          ### macOS ARM64
+          - **GUI Only**: snaptidy-gui-macos-arm64-v0.1.0b1.tar.gz
+          - **CLI Only**: snaptidy-cli-v0.1.0b1.tar.gz
+          - **Complete**: snaptidy-complete-v0.1.0b1.tar.gz
+          
+          ### Windows x64
+          - **GUI Only**: snaptidy-gui-windows-x64-v0.1.0b1.zip
+          - **CLI Only**: snaptidy-cli-windows-x64-v0.1.0b1.zip
+          - **Complete**: snaptidy-complete-windows-x64-v0.1.0b1.zip
+          
+          ### Features
+          - Folder flattening
+          - Duplicate removal (exact and perceptual)
+          - Date-based organization
+          - CSV logging system
+          - Recovery options
+          - Modern PyQt6 GUI
+          
+          ### Installation
+          See individual package README files for installation instructions.
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
