@@ -91,6 +91,17 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
     
+    - name: Debug - List files
+      run: |
+        echo "Current directory:"
+        pwd
+        echo "Files in current directory:"
+        ls -la
+        echo "Spec files:"
+        ls -la *.spec
+        echo "GitHub workspace:"
+        echo $env:GITHUB_WORKSPACE
+    
     - name: Build Windows GUI
       run: |
         pyinstaller snaptidy-gui-windows.spec --clean
