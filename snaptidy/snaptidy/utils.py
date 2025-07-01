@@ -5,9 +5,10 @@ Utility functions for SnapTidy.
 import os
 import logging
 import hashlib
+import csv
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union, List
 import concurrent.futures
 import shutil
 
@@ -28,6 +29,141 @@ except ImportError:
 
 
 logger = logging.getLogger(__name__)
+
+
+class OperationLogger:
+    """Logger for tracking all operations for recovery purposes."""
+
+    def __init__(self, log_file: str):
+        self.log_file = log_file
+        self.operations: List[Dict] = []
+
+    def log_operation(
+        self,
+        operation_type: str,
+        source_path: str,
+        target_path: str = None,
+        metadata: Dict = None,
+        timestamp: str = None,
+    ):
+        """Log an operation for recovery purposes."""
+        if timestamp is None:
+            timestamp = datetime.now().isoformat()
+
+        log_entry = {
+            "timestamp": timestamp,
+            "operation_type": operation_type,
+            "source_path": source_path,
+            "target_path": target_path,
+            "file_size": utils.get_file_size(source_path) if source_path else 0,
+            "metadata": metadata or {},
+        }
+
+        self.operations.append(log_entry)
+
+        # Write to CSV file immediately
+        self._write_to_csv(log_entry)
+
+    def _write_to_csv(self, log_entry: Dict):
+        """Write a single log entry to CSV file."""
+        file_exists = os.path.exists(self.log_file)
+
+        with open(self.log_file, "a", newline="", encoding="utf-8") as csvfile:
+            fieldnames = [
+                "timestamp",
+                "operation_type",
+                "source_path",
+                "target_path",
+                "file_size",
+                "metadata",
+            ]
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+            if not file_exists:
+                writer.writeheader()
+
+            writer.writerow(log_entry)
+
+    def get_recovery_script(self) -> str:
+        """Generate a recovery script from the logged operations."""
+        script_lines = [
+            "#!/usr/bin/env python3",
+            "# SnapTidy Recovery Script",
+            "# Generated on: " + datetime.now().isoformat(),
+            "",
+            "import os",
+            "import shutil",
+            "from pathlib import Path",
+            "",
+            "def recover_files():",
+            '    """Recover files based on operation log."""',
+            "    recovered_count = 0",
+            "    errors = []",
+            "",
+        ]
+
+        # Group operations by type for better recovery
+        operations_by_type = {}
+        for op in self.operations:
+            op_type = op["operation_type"]
+            if op_type not in operations_by_type:
+                operations_by_type[op_type] = []
+            operations_by_type[op_type].append(op)
+
+        # Generate recovery code for each operation type
+        for op_type, ops in operations_by_type.items():
+            script_lines.append(f"    # Recovering {op_type} operations")
+
+            if op_type == "move":
+                for op in ops:
+                    if op["target_path"] and os.path.exists(op["target_path"]):
+                        script_lines.extend(
+                            [
+                                f"    try:",
+                                f"        if os.path.exists('{op['target_path']}'):",
+                                f"            shutil.move('{op['target_path']}', '{op['source_path']}')",
+                                f"            print(f'Recovered: {op['source_path']}')",
+                                f"            recovered_count += 1",
+                                f"    except Exception as e:",
+                                f"        errors.append(f'Failed to recover {op['source_path']}: {{e}}')",
+                                "",
+                            ]
+                        )
+
+            elif op_type == "delete":
+                script_lines.extend(
+                    [
+                        f"    # Note: {len(ops)} files were deleted and cannot be recovered",
+                        f"    # Deleted files:",
+                    ]
+                )
+                for op in ops:
+                    script_lines.append(f"    #   {op['source_path']}")
+                script_lines.append("")
+
+        script_lines.extend(
+            [
+                "    print(f'Recovery completed. Recovered {{recovered_count}} files.')",
+                "    if errors:",
+                "        print('Errors during recovery:')",
+                "        for error in errors:",
+                "            print(f'  {{error}}')",
+                "",
+                "if __name__ == '__main__':",
+                "    recover_files()",
+            ]
+        )
+
+        return "\n".join(script_lines)
+
+    def save_recovery_script(self, script_path: str):
+        """Save the recovery script to a file."""
+        script_content = self.get_recovery_script()
+        with open(script_path, "w", encoding="utf-8") as f:
+            f.write(script_content)
+
+        # Make the script executable
+        os.chmod(script_path, 0o755)
 
 
 def compute_file_hash(file_path: str, chunk_size: int = 8192) -> str:

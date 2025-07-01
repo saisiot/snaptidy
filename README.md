@@ -6,10 +6,10 @@
     <img src="logo.png" alt="SnapTidy logo" width="280"/>
   </p>
 
-  **Clean up your photo library with a single command.**
+  **Organize your photo library with ease.**
   
-  [![라이선스: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-  [![Python 버전](https://img.shields.io/badge/python-3.7%2B-brightgreen)](https://www.python.org/downloads/)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+  [![Python Version](https://img.shields.io/badge/python-3.7%2B-brightgreen)](https://www.python.org/downloads/)
   [![Homebrew](https://img.shields.io/badge/homebrew-available-orange)](https://brew.sh/)
 
   [🇺🇸 English](README.md) | [🇰🇷 한국어](README-ko.md)
@@ -17,119 +17,165 @@
 
 ## 🔍 What is SnapTidy?
 
-**SnapTidy** is a powerful CLI tool that helps you organize messy directories and remove duplicate files - especially for photos and other media files. Ever downloaded the same photo multiple times or have photos spread across dozens of folders? SnapTidy makes cleaning up a breeze.
+**SnapTidy** is a powerful tool for organizing complex directories and removing duplicate files - especially optimized for photos and other media files. Tired of having the same photo downloaded multiple times or photos scattered across dozens of folders? Clean them up easily with SnapTidy.
+
+## 🚀 Quick Start
+
+### For Most Users: GUI Interface (Recommended)
+
+SnapTidy includes a beautiful and intuitive GUI application that makes photo organization effortless!
 
 ```bash
-# Flatten all files into one directory
+# Launch the GUI
+snaptidy-gui
+```
+
+**Features:**
+- 📁 **Drag & Drop**: Simply drag folders into the interface
+- ⚙️ **Visual Settings**: Adjust sensitivity, threads, and options with sliders
+- 📊 **Real-time Progress**: See exactly what's happening during operations
+- 🎨 **Modern Design**: Professional appearance that matches your OS
+- 🔄 **Recovery System**: One-click recovery script generation
+- 📋 **Logging Mode**: Safe operations with complete recovery capability
+- 📱 **Responsive UI**: Scroll support for smaller windows
+
+### For Power Users: Command Line Interface
+
+Advanced users can use the CLI for automation and scripting:
+
+```bash
+# Flatten all files into a single directory
 snaptidy flatten
 
-# Remove duplicate photos (even similar ones!)
+# Remove duplicate photos (including similar ones!)
 snaptidy dedup --sensitivity 0.9
 
-# Organize photos by date taken
+# Organize photos by shooting date
 snaptidy organize --date-format yearmonth
 ```
 
 ## ✨ Key Features
 
-### 📁 Flatten Directories
-- Move all files from subdirectories into the current directory
-- **Optionally copy all files into a separate 'flattened' folder instead of moving them**
-- Automatically handle filename conflicts with smart renaming
-- Get rid of complex nested folder structures with one command
+### 📁 Directory Flattening
+- Move all files from subdirectories to the current directory
+- **Option: Copy all files to a separate 'flattened' folder**
+- Smart automatic handling of filename conflicts
+- Solve complex nested folder structures with a single command
 
-#### New Options
-| Option      | Description |
-|-------------|-------------|
-| `--copy`    | Copy files instead of moving them. All files will be copied into a new folder (default: `<path>/flattened`). |
-| `--output`  | Output directory for flattened files (used only with `--copy`). |
-
-#### Disk Space Safety
-- When using `--copy`, SnapTidy checks if there is enough free disk space before copying. If not, the operation is aborted with a warning.
-
-#### Example Usage
-```bash
-# Move all files into the current directory (default)
-snaptidy flatten --path /path/to/folder
-
-# Copy all files into a new 'flattened' folder (recommended for large disks)
-snaptidy flatten --path /path/to/folder --copy
-
-# Copy all files into a custom output folder
-snaptidy flatten --path /path/to/folder --copy --output /path/to/output_folder
-```
-
-### 🔍 Smart Deduplication
-- Find and remove exact duplicates using SHA256 hash comparison
+### 🔍 Smart Duplicate Removal
+- Find exact duplicate files using SHA256 hash comparison
 - Detect similar photos even if they've been resized or slightly modified
-- Choose your sensitivity level for perceptual similarity detection
-- Always keeps the highest quality version of each file
+- Adjustable sensitivity level for visual similarity detection
+- Always keep the highest quality version of each file
+- **New: Move duplicates to a folder instead of deleting them**
 
 ### 📅 Date-Based Organization
 - Extract creation dates from EXIF data and file metadata
-- Automatically sort files into folders by year or year+month
-- Restore order to your photo collection based on when the photos were taken
+- Automatic folder organization by year or year+month
+- Organize photo collections based on when they were taken
+- **New: Handle files without date metadata**
 
-### ⚙️ Flexible Configuration
-- Preview changes with `--dry-run` before applying them
-- Tune performance with multi-threading support
-- Customize organization with multiple date format options
+### 🔄 Recovery System
+- **Complete operation logging** to CSV files for full recovery
+- **Recovery script generation** to restore files to their original locations
+- **Safe mode** that prevents file deletion and forces move operations
+- **Automatic recovery button** in GUI when log files are available
 
-## 🚀 Installation
+## 🖥️ GUI Usage (For Most Users)
 
-### Using Homebrew (recommended)
+### Launch and Setup
+1. **Install SnapTidy** (see installation section below)
+2. **Launch GUI**: Run `snaptidy-gui` in your terminal
+3. **Select Folder**: Use the folder selector or drag & drop a folder
+4. **Configure Settings**: Adjust options using the intuitive controls
+5. **Run Operations**: Click individual operation buttons or "Run All"
 
-```bash
-brew tap yourname/tap
-brew install snaptidy
-```
+### GUI Features
+- **Modern Interface**: Clean, professional design with drag-and-drop support
+- **Visual Progress**: Real-time progress bars and status updates
+- **Easy Configuration**: Intuitive controls for all SnapTidy options
+- **Cross-Platform**: Works on Windows, macOS, and Linux
+- **Recovery System**: Built-in recovery button when log files are available
+- **Scroll Support**: Handles small window sizes gracefully
 
-### From Source
+### Recovery Workflow
+1. **Enable Logging Mode**: Check "📋 작업 로그 기록 (복구 가능)" in GUI
+2. **Run Operations**: Execute flatten, dedup, or organize operations
+3. **Generate Recovery Script**: Click "🔄 복구" button when available
+4. **Execute Recovery**: Run the generated `snaptidy_recovery.py` script
 
-```bash
-git clone https://github.com/yourname/snaptidy.git
-cd snaptidy
-pip install .
-```
+### Safety Features
+- **Complete Recoverability**: All operations logged when logging mode is enabled
+- **No Data Loss**: File deletion is disabled in logging mode
+- **Smart Recovery**: Automatic detection of available log files
+- **User Confirmation**: Clear warnings and confirmations before destructive operations
 
-## 📋 Usage
-
-```bash
-# General usage
-snaptidy [command] [options]
-
-# Get help
-snaptidy --help
-snaptidy [command] --help
-```
+## 💻 CLI Usage (For Power Users)
 
 ### Basic Commands
 
 ```bash
-# Flatten all files from subdirectories into current directory
+# Flatten subdirectories into the current directory
 snaptidy flatten --path /path/to/folder
 
 # Find and remove duplicate files
 snaptidy dedup --path /path/to/folder --sensitivity 0.9
 
-# Organize files by date taken
+# Organize files by shooting date
 snaptidy organize --path /path/to/folder --date-format yearmonth
 ```
 
-### Options
+### Advanced Options
 
 | Option | Description |
 |--------|-------------|
 | `--path` | Target directory (default: current directory) |
 | `--dry-run` | Show what would happen without making changes |
-| `--log` | Save operation log to a file |
-| `--sensitivity` | Perceptual similarity threshold (0.0-1.0) |
+| `--log` | Save operation log to file |
+| `--logging` | Enable CSV logging for recovery |
+| `--sensitivity` | Visual similarity threshold (0.0-1.0) |
 | `--threads` | Number of concurrent threads to use |
-| `--date-format` | Format for organizing by date (`year` or `yearmonth`) |
+| `--date-format` | Date-based organization format (`year` or `yearmonth`) |
+| `--copy` | Copy files instead of moving (flatten only) |
+| `--output` | Output directory for copied files (flatten only) |
+| `--duplicates-folder` | Move duplicates to this folder instead of deleting |
+| `--unclassified-folder` | Move files without date metadata to this folder |
+
+### New Options
+
+#### Directory Flattening
+```bash
+# Move all files to the current directory (default)
+snaptidy flatten --path /path/to/folder
+
+# Copy all files to a new 'flattened' folder (recommended when you have plenty of disk space)
+snaptidy flatten --path /path/to/folder --copy
+
+# Copy all files to a specified folder
+snaptidy flatten --path /path/to/folder --copy --output /path/to/output_folder
+```
+
+#### Duplicate Handling
+```bash
+# Delete duplicates (default)
+snaptidy dedup --path /path/to/folder
+
+# Move duplicates to a specified folder
+snaptidy dedup --path /path/to/folder --duplicates-folder /path/to/duplicates
+```
+
+#### Unclassified File Handling
+```bash
+# Move files without date metadata to 'unclassified' folder
+snaptidy organize --path /path/to/folder --unclassified-folder /path/to/unclassified
+```
+
+### Disk Space Safety
+- When using the `--copy` option, SnapTidy checks available disk space before copying. If space is insufficient, the operation is aborted with a warning.
 
 ## 📊 Examples
 
-### Before:
+### Before Organization:
 ```
 Photos/
 ├── Download/
@@ -145,7 +191,7 @@ Photos/
 └── IMG_2000.jpg
 ```
 
-### After deduplication and organization:
+### After Deduplication and Organization:
 ```
 Photos/
 ├── 202101/
@@ -153,56 +199,51 @@ Photos/
 │   └── IMG_0789.jpg
 ├── 202102/
 │   └── IMG_1010.jpg 
-└── 202112/
-    └── IMG_2000.jpg
+├── 202112/
+│   └── IMG_2000.jpg
+└── duplicates/
+    ├── IMG_0123 (1).jpg
+    └── IMG_0456.jpg
+```
+
+## 🚀 Installation
+
+### Using Homebrew (Recommended)
+
+```bash
+brew tap yourname/tap
+brew install snaptidy
+```
+
+### Install from Source
+
+```bash
+git clone https://github.com/yourname/snaptidy.git
+cd snaptidy
+pip install .
 ```
 
 ## 🧩 Technical Overview
 
-SnapTidy is built with Python and uses these core technologies:
+SnapTidy is developed in Python and uses the following core technologies:
 
-- **File Hashing**: `hashlib` for exact duplicate detection
-- **Image Analysis**: `imagehash` and `Pillow` for perceptual image comparison
+- **File Hashing**: `hashlib` for accurate duplicate detection
+- **Image Analysis**: `imagehash` and `Pillow` for visual image comparison
 - **Video Processing**: `opencv-python` and `ffmpeg` for video similarity
-- **Metadata Extraction**: `exifread` and `hachoir` for parsing file information
-- **Performance**: `concurrent.futures` for multi-threading
+- **Metadata Extraction**: `exifread` and `hachoir` for file information parsing
+- **Performance Optimization**: `concurrent.futures` for multi-threading
+- **GUI Framework**: `PyQt6` for modern cross-platform interface
 
 ## 🤝 Contributing
 
-Contributions are welcome! Check out the [issues page](https://github.com/yourname/snaptidy/issues) for open tasks or submit your own ideas.
+Contributions are always welcome! Check out the [issues page](https://github.com/yourname/snaptidy/issues) for open tasks or submit your ideas.
 
 ## 📜 License
 
-SnapTidy is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+SnapTidy is provided under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
 <div align="center">
   <i>Made with ❤️ for people who hate messy photo libraries</i>
 </div>
-
-## 🖥️ GUI Version
-
-SnapTidy now includes a beautiful and intuitive GUI application!
-
-### Features
-- **Modern Interface**: Clean, professional design with drag-and-drop support
-- **Visual Progress**: Real-time progress bars and status updates
-- **Easy Settings**: Intuitive controls for all SnapTidy options
-- **Cross-Platform**: Works on Windows, macOS, and Linux
-
-### Launch GUI
-```bash
-snaptidy-gui
-```
-
-### GUI Screenshots
-- **Main Interface**: Folder selection, settings panel, and action buttons
-- **Progress Tracking**: Real-time progress with detailed status messages
-- **Results Display**: Clear feedback on operation completion
-
-### GUI Features
-- 📁 **Drag & Drop**: Simply drag folders onto the interface
-- ⚙️ **Visual Settings**: Adjust sensitivity, threads, and options with sliders
-- 📊 **Live Progress**: See exactly what's happening during operations
-- 🎨 **Modern Design**: Professional appearance that matches your OS

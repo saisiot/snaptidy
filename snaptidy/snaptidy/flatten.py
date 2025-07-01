@@ -7,8 +7,8 @@ import os
 import shutil
 import logging
 from pathlib import Path
-from typing import List, Set, Optional
-from . import utils
+from typing import List, Set, Optional, Tuple
+from .utils import OperationLogger
 
 
 logger = logging.getLogger(__name__)
@@ -67,7 +67,11 @@ def get_unique_filename(target_dir: str, original_name: str) -> str:
 
 
 def run(
-    path: str, dry_run: bool = False, copy: bool = False, output: Optional[str] = None
+    path: str,
+    dry_run: bool = False,
+    copy: bool = False,
+    output: Optional[str] = None,
+    logging_mode: bool = False,
 ) -> None:
     """
     Move or copy all files from subdirectories into the target directory or output directory.
@@ -76,16 +80,37 @@ def run(
         dry_run: If True, only show what would be done without making changes
         copy: If True, copy files instead of moving
         output: Output directory for flattened files (used only if copy is True)
+        logging_mode: If True, log all operations for recovery
     """
     path = os.path.abspath(path)
+
+    # Setup output directory for copy mode
     if copy:
         if output is None:
             output = os.path.join(path, "flattened")
         output = os.path.abspath(output)
-        if not os.path.exists(output) and not dry_run:
-            os.makedirs(output)
+        # Check disk space if copying
+        if not dry_run:
+            total_size = sum(os.path.getsize(f) for f in get_all_files(path))
+            free_space = shutil.disk_usage(output).free
+            if total_size > free_space:
+                print(
+                    f"Insufficient disk space. Need {total_size} bytes, but only {free_space} bytes available."
+                )
+                return
+        print(f"Copying files to: {output}")
+        os.makedirs(output, exist_ok=True)
+        target_dir = output
     else:
-        output = path
+        target_dir = path
+
+    # Setup logging if enabled
+    operation_logger = None
+    if logging_mode:
+        log_file = os.path.join(path, "snaptidy_flatten_log.csv")
+        operation_logger = OperationLogger(log_file)
+        print(f"Logging operations to: {log_file}")
+
     logger.info(f"Flattening directory: {path}{' (copy mode)' if copy else ''}")
     logger.info(f"Output directory: {output}")
 
@@ -110,23 +135,21 @@ def run(
         logger.info(f"No files need to be {'copied' if copy else 'moved'}.")
         return
 
-    # 용량 체크 (copy 모드만)
-    if copy:
-        total_size = sum(os.path.getsize(f) for f in files_to_process)
-        free_space = utils.get_disk_free_space(output)
-        logger.info(
-            f"Total size to copy: {total_size} bytes, Free space: {free_space} bytes"
-        )
-        if total_size > free_space:
-            logger.error("Not enough disk space to copy all files. Operation aborted.")
-            return
-
     processed_count = 0
     for file_path in files_to_process:
         original_name = os.path.basename(file_path)
         unique_name = get_unique_filename(output, original_name)
         target_path = os.path.join(output, unique_name)
         try:
+            # Log the operation if logging is enabled
+            if operation_logger:
+                operation_type = "copy" if copy else "move"
+                operation_logger.log_operation(
+                    operation_type=operation_type,
+                    source_path=file_path,
+                    target_path=target_path,
+                )
+
             if copy:
                 logger.info(
                     f"{'Would copy' if dry_run else 'Copying'} {file_path} -> {target_path}"
@@ -163,3 +186,90 @@ def run(
                 except Exception as e:
                     logger.error(f"Error removing directory {dir_path}: {str(e)}")
     logger.info("Flatten operation completed.")
+
+    if operation_logger:
+        print(f"Operation log saved to: {operation_logger.log_file}")
+
+
+def flatten_directory(
+    directory: str,
+    files: List[str],
+    copy_mode: bool = False,
+    output_folder: str = None,
+    dry_run: bool = False,
+    logger_instance=None,
+) -> Tuple[int, int]:
+    """
+    Flatten a directory by moving all files to the root level.
+
+    Args:
+        directory: Base directory
+        files: List of file paths to flatten
+        copy_mode: If True, copy files instead of moving them
+        output_folder: If specified, move/copy files to this subfolder
+        dry_run: If True, only show what would be done without making changes
+        logger_instance: OperationLogger instance for tracking operations
+
+    Returns:
+        Tuple containing (number of files processed, total bytes processed)
+    """
+    total_files = 0
+    total_bytes = 0
+
+    for file_path in files:
+        try:
+            # Get relative path to maintain directory structure
+            rel_path = os.path.relpath(file_path, directory)
+
+            # Determine target path
+            if output_folder:
+                target_dir = os.path.join(directory, output_folder)
+                target_path = os.path.join(target_dir, os.path.basename(file_path))
+            else:
+                target_path = os.path.join(directory, os.path.basename(file_path))
+
+            # Create target directory if it doesn't exist
+            if not os.path.exists(os.path.dirname(target_path)) and not dry_run:
+                os.makedirs(os.path.dirname(target_path))
+
+            # Handle filename conflicts
+            if os.path.exists(target_path) and not dry_run:
+                base_name, ext = os.path.splitext(os.path.basename(file_path))
+                counter = 1
+                while os.path.exists(target_path):
+                    new_name = f"{base_name}_{counter}{ext}"
+                    target_path = os.path.join(os.path.dirname(target_path), new_name)
+                    counter += 1
+
+            # Log the operation
+            if logger_instance:
+                operation_type = "copy" if copy_mode else "move"
+                logger_instance.log_operation(
+                    operation_type=operation_type,
+                    source_path=file_path,
+                    target_path=target_path,
+                )
+
+            # Perform the operation
+            if copy_mode:
+                logger.info(
+                    f"{'Would copy' if dry_run else 'Copying'} {file_path} -> {target_path}"
+                )
+                if not dry_run:
+                    shutil.copy2(file_path, target_path)
+            else:
+                logger.info(
+                    f"{'Would move' if dry_run else 'Moving'} {file_path} -> {target_path}"
+                )
+                if not dry_run:
+                    shutil.move(file_path, target_path)
+
+            # Update statistics
+            file_size = os.path.getsize(file_path)
+            total_files += 1
+            total_bytes += file_size
+
+        except Exception as e:
+            logger.error(f"Error processing {file_path}: {str(e)}")
+
+    return total_files, total_bytes

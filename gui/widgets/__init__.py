@@ -1,9 +1,8 @@
 """
-Custom widgets for SnapTidy GUI.
+GUI widgets for SnapTidy.
 """
 
 from .folder_selector import FolderSelector
 from .progress_widget import ProgressWidget
-from .settings_panel import SettingsPanel
 
-__all__ = ["FolderSelector", "ProgressWidget", "SettingsPanel"]
+__all__ = ["FolderSelector", "ProgressWidget"]

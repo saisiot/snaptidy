@@ -7,6 +7,7 @@ import os
 import logging
 from collections import defaultdict
 from typing import Dict, List, Set, Tuple
+import shutil
 
 from . import utils
 
@@ -242,8 +243,72 @@ def remove_duplicates(
     return total_files_removed, total_bytes_recovered
 
 
+def move_duplicates_to_folder(
+    duplicate_groups: List[DuplicateGroup], target_folder: str, dry_run: bool = False
+) -> Tuple[int, int]:
+    """
+    Move duplicate files to a specific folder instead of deleting them.
+
+    Args:
+        duplicate_groups: List of DuplicateGroup objects
+        target_folder: Folder to move duplicates to
+        dry_run: If True, only show what would be done without making changes
+
+    Returns:
+        Tuple of (number of files moved, bytes that would be recovered)
+    """
+    total_files_moved = 0
+    total_bytes_recovered = 0
+
+    # Create target folder if it doesn't exist
+    if not dry_run and not os.path.exists(target_folder):
+        os.makedirs(target_folder)
+
+    for group in duplicate_groups:
+        for duplicate in group.duplicates:
+            # Generate target path
+            filename = os.path.basename(duplicate)
+            target_path = os.path.join(target_folder, filename)
+
+            # Handle filename conflicts
+            if os.path.exists(target_path) and not dry_run:
+                base_name, ext = os.path.splitext(filename)
+                counter = 1
+                while os.path.exists(target_path):
+                    new_name = f"{base_name}_{counter}{ext}"
+                    target_path = os.path.join(target_folder, new_name)
+                    counter += 1
+
+            # Log what would be done
+            logger.info(
+                f"{'Would move' if dry_run else 'Moving'} duplicate: {duplicate}"
+            )
+            logger.info(f"  To: {target_path}")
+            logger.info(f"  Original: {group.original_file}")
+
+            # Move file if not in dry_run mode
+            if not dry_run:
+                try:
+                    file_size = os.path.getsize(duplicate)
+                    shutil.move(duplicate, target_path)
+                    total_files_moved += 1
+                    total_bytes_recovered += file_size
+                except Exception as e:
+                    logger.error(f"Error moving {duplicate}: {str(e)}")
+            else:
+                total_files_moved += 1
+                total_bytes_recovered += utils.get_file_size(duplicate)
+
+    return total_files_moved, total_bytes_recovered
+
+
 def run(
-    path: str, sensitivity: float = 0.9, dry_run: bool = False, threads: int = None
+    path: str,
+    sensitivity: float = 0.9,
+    dry_run: bool = False,
+    threads: int = 1,
+    logging_mode: bool = False,
+    duplicates_folder: str = None,
 ) -> None:
     """
     Run the deduplication process.
@@ -253,10 +318,16 @@ def run(
         sensitivity: Sensitivity threshold for perceptual similarity detection
         dry_run: If True, only show what would be done without making changes
         threads: Number of threads to use for parallel processing
+        logging_mode: If True, enable logging for deduplication operations
+        duplicates_folder: If specified, move duplicates to this folder instead of deleting them
     """
     path = os.path.abspath(path)
     logger.info(f"Deduplicating directory: {path}")
     logger.info(f"Sensitivity: {sensitivity}, Dry run: {dry_run}, Threads: {threads}")
+    if duplicates_folder:
+        logger.info(f"Moving duplicates to folder: {duplicates_folder}")
+    else:
+        logger.info("Deleting duplicate files")
 
     if not os.path.isdir(path):
         logger.error(f"'{path}' is not a directory.")
@@ -313,25 +384,60 @@ def run(
         logger.info(f"Found {len(similar_video_groups)} groups of similar videos.")
         all_duplicate_groups.extend(similar_video_groups)
 
-    # Step 4: Remove all duplicates
+    # Step 4: Process all duplicates
     if all_duplicate_groups:
-        files_removed, bytes_recovered = remove_duplicates(
-            all_duplicate_groups, dry_run
-        )
+        if duplicates_folder:
+            # Move duplicates to specified folder
+            files_moved, bytes_recovered = move_duplicates_to_folder(
+                all_duplicate_groups, duplicates_folder, dry_run
+            )
 
-        # Format byte size for human readability
-        if bytes_recovered < 1024:
-            size_str = f"{bytes_recovered} bytes"
-        elif bytes_recovered < 1024 * 1024:
-            size_str = f"{bytes_recovered / 1024:.2f} KB"
-        elif bytes_recovered < 1024 * 1024 * 1024:
-            size_str = f"{bytes_recovered / (1024 * 1024):.2f} MB"
+            # Format byte size for human readability
+            if bytes_recovered < 1024:
+                size_str = f"{bytes_recovered} bytes"
+            elif bytes_recovered < 1024 * 1024:
+                size_str = f"{bytes_recovered / 1024:.2f} KB"
+            elif bytes_recovered < 1024 * 1024 * 1024:
+                size_str = f"{bytes_recovered / (1024 * 1024):.2f} MB"
+            else:
+                size_str = f"{bytes_recovered / (1024 * 1024 * 1024):.2f} GB"
+
+            action = "Would move" if dry_run else "Moved"
+            logger.info(
+                f"{action} {files_moved} duplicate files to {duplicates_folder}, recovering {size_str}."
+            )
         else:
-            size_str = f"{bytes_recovered / (1024 * 1024 * 1024):.2f} GB"
+            # Delete duplicates
+            files_removed, bytes_recovered = remove_duplicates(
+                all_duplicate_groups, dry_run
+            )
 
-        action = "Would remove" if dry_run else "Removed"
-        logger.info(f"{action} {files_removed} duplicate files, recovering {size_str}.")
+            # Format byte size for human readability
+            if bytes_recovered < 1024:
+                size_str = f"{bytes_recovered} bytes"
+            elif bytes_recovered < 1024 * 1024:
+                size_str = f"{bytes_recovered / 1024:.2f} KB"
+            elif bytes_recovered < 1024 * 1024 * 1024:
+                size_str = f"{bytes_recovered / (1024 * 1024):.2f} MB"
+            else:
+                size_str = f"{bytes_recovered / (1024 * 1024 * 1024):.2f} GB"
+
+            action = "Would remove" if dry_run else "Removed"
+            logger.info(
+                f"{action} {files_removed} duplicate files, recovering {size_str}."
+            )
     else:
         logger.info("No duplicates found.")
 
     logger.info("Deduplication completed.")
+
+    operation_logger = None
+    if logging_mode:
+        from .utils import OperationLogger
+
+        log_file = os.path.join(path, "snaptidy_dedup_log.csv")
+        operation_logger = OperationLogger(log_file)
+        print(f"Logging dedup operations to: {log_file}")
+
+    if operation_logger:
+        print(f"Dedup operation log saved to: {operation_logger.log_file}")

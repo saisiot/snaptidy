@@ -8,6 +8,7 @@ import shutil
 import logging
 from pathlib import Path
 from typing import Dict, List, Tuple
+import exifread
 
 from . import utils
 
@@ -15,18 +16,61 @@ from . import utils
 logger = logging.getLogger(__name__)
 
 
-def get_target_folder(file_path: str, date_format: str) -> str:
+def get_target_folder(
+    file_path: str, date_format: str, unclassified_mode: bool = False
+) -> str:
     """
     Determine the target folder based on file creation date.
 
     Args:
         file_path: Path to the file
         date_format: Format for date-based folder organization ('year' or 'yearmonth')
+        unclassified_mode: If True, put files without date metadata in 'unclassified' folder
 
     Returns:
         Target folder name
     """
     date = utils.extract_date(file_path)
+
+    # Check if this is a fallback date (file modification time)
+    file_ext = os.path.splitext(file_path)[1].lower()
+    is_fallback_date = False
+
+    if file_ext in [".jpg", ".jpeg", ".png", ".tiff", ".heic"]:
+        # For images, check if we got a fallback date
+        try:
+            with open(file_path, "rb") as f:
+                tags = exifread.process_file(f, details=False)
+            # If no EXIF date tags found, this is a fallback
+            date_tags = [
+                "EXIF DateTimeOriginal",
+                "EXIF DateTimeDigitized",
+                "Image DateTime",
+            ]
+            is_fallback_date = not any(tag in tags for tag in date_tags)
+        except:
+            is_fallback_date = True
+    elif file_ext in [".mp4", ".mov", ".avi", ".mkv"]:
+        # For videos, check if we got a fallback date
+        try:
+            from hachoir.parser import createParser
+            from hachoir.metadata import extractMetadata
+
+            parser = createParser(file_path)
+            if parser:
+                metadata = extractMetadata(parser)
+                is_fallback_date = not (metadata and metadata.has("creation_date"))
+            else:
+                is_fallback_date = True
+        except:
+            is_fallback_date = True
+    else:
+        # For other files, always use fallback date
+        is_fallback_date = True
+
+    # If unclassified mode is enabled and we have a fallback date, put in unclassified folder
+    if unclassified_mode and is_fallback_date:
+        return "unclassified"
 
     if date_format == "year":
         return str(date.year)
@@ -38,7 +82,11 @@ def get_target_folder(file_path: str, date_format: str) -> str:
 
 
 def organize_files(
-    directory: str, files: List[str], date_format: str, dry_run: bool
+    directory: str,
+    files: List[str],
+    date_format: str,
+    dry_run: bool,
+    unclassified_mode: bool = False,
 ) -> Tuple[Dict[str, int], int]:
     """
     Organize files into folders based on their creation date.
@@ -48,6 +96,7 @@ def organize_files(
         files: List of file paths to organize
         date_format: Format for date-based folder organization ('year' or 'yearmonth')
         dry_run: If True, only show what would be done without making changes
+        unclassified_mode: If True, put files without date metadata in 'unclassified' folder
 
     Returns:
         Tuple containing (dictionary of folder counts, total files organized)
@@ -73,7 +122,7 @@ def organize_files(
                 continue
 
             # Determine target folder
-            target_folder = get_target_folder(file_path, date_format)
+            target_folder = get_target_folder(file_path, date_format, unclassified_mode)
             target_dir = os.path.join(directory, target_folder)
             target_path = os.path.join(target_dir, os.path.basename(file_path))
 
@@ -108,7 +157,14 @@ def organize_files(
     return folder_counts, total_organized
 
 
-def run(path: str, date_format: str = "year", dry_run: bool = False) -> None:
+def run(
+    path: str,
+    date_format: str = "year",
+    dry_run: bool = False,
+    unclassified_mode: bool = False,
+    logging_mode: bool = False,
+    unclassified_folder: str = None,
+) -> None:
     """
     Organize files by date.
 
@@ -116,6 +172,9 @@ def run(path: str, date_format: str = "year", dry_run: bool = False) -> None:
         path: Target directory path
         date_format: Format for date-based folder organization ('year' or 'yearmonth')
         dry_run: If True, only show what would be done without making changes
+        unclassified_mode: If True, put files without date metadata in 'unclassified' folder
+        logging_mode: If True, log organize operations to a CSV file
+        unclassified_folder: The folder to move files without date metadata to
     """
     path = os.path.abspath(path)
     logger.info(f"Organizing directory: {path}")
@@ -140,7 +199,7 @@ def run(path: str, date_format: str = "year", dry_run: bool = False) -> None:
     if media_files:
         logger.info(f"Organizing {len(media_files)} media files...")
         folder_counts, total_organized = organize_files(
-            path, media_files, date_format, dry_run
+            path, media_files, date_format, dry_run, unclassified_mode
         )
 
         # Log summary
@@ -165,7 +224,7 @@ def run(path: str, date_format: str = "year", dry_run: bool = False) -> None:
         # For simplicity, let's organize them automatically
         logger.info(f"Organizing {len(other_files)} non-media files...")
         other_folder_counts, other_total_organized = organize_files(
-            path, other_files, date_format, dry_run
+            path, other_files, date_format, dry_run, unclassified_mode
         )
 
         # Log summary
@@ -174,3 +233,23 @@ def run(path: str, date_format: str = "year", dry_run: bool = False) -> None:
         )
 
     logger.info("Organization completed.")
+
+    operation_logger = None
+    if logging_mode:
+        log_file = os.path.join(path, "snaptidy_organize_log.csv")
+        operation_logger = utils.OperationLogger(log_file)
+        print(f"Logging organize operations to: {log_file}")
+
+    # When a file is moved/copied, log it:
+    # Note: This should be called within the file processing loop where src_path and dst_path are defined
+    # if operation_logger:
+    #     operation_logger.log_operation(
+    #         operation_type="move",
+    #         source_path=src_path,
+    #         target_path=dst_path,
+    #         file_size=os.path.getsize(dst_path),
+    #         timestamp=operation_logger.get_timestamp()
+    #     )
+
+    if operation_logger:
+        print(f"Organize operation log saved to: {operation_logger.log_file}")

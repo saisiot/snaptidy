@@ -46,7 +46,13 @@ def setup_logging(log_file: Optional[str] = None, verbose: bool = False) -> None
 
 def flatten_command(args) -> None:
     """Handle the flatten subcommand."""
-    flatten.run(path=args.path, dry_run=args.dry_run)
+    flatten.run(
+        path=args.path,
+        dry_run=args.dry_run,
+        copy=args.copy,
+        output=args.output,
+        logging_mode=args.logging,
+    )
 
 
 def dedup_command(args) -> None:
@@ -56,12 +62,20 @@ def dedup_command(args) -> None:
         sensitivity=args.sensitivity,
         dry_run=args.dry_run,
         threads=args.threads,
+        logging_mode=args.logging,
+        duplicates_folder=args.duplicates_folder,
     )
 
 
 def organize_command(args) -> None:
     """Handle the organize subcommand."""
-    organize.run(path=args.path, date_format=args.date_format, dry_run=args.dry_run)
+    organize.run(
+        path=args.path,
+        date_format=args.date_format,
+        dry_run=args.dry_run,
+        logging_mode=args.logging,
+        unclassified_folder=args.unclassified_folder,
+    )
 
 
 def parse_args(args: List[str]) -> argparse.Namespace:
@@ -91,6 +105,20 @@ def parse_args(args: List[str]) -> argparse.Namespace:
         action="store_true",
         help="Show what would be done without making changes",
     )
+    flatten_parser.add_argument(
+        "--copy",
+        action="store_true",
+        help="Copy files instead of moving them",
+    )
+    flatten_parser.add_argument(
+        "--output",
+        help="Output directory for copied files",
+    )
+    flatten_parser.add_argument(
+        "--logging",
+        action="store_true",
+        help="Enable logging mode (logs all operations to CSV)",
+    )
     flatten_parser.set_defaults(func=flatten_command)
 
     # Dedup subcommand
@@ -112,6 +140,15 @@ def parse_args(args: List[str]) -> argparse.Namespace:
         default=os.cpu_count(),
         help=f"Number of threads to use (default: {os.cpu_count()})",
     )
+    dedup_parser.add_argument(
+        "--logging",
+        action="store_true",
+        help="Enable logging mode (logs all operations to CSV)",
+    )
+    dedup_parser.add_argument(
+        "--duplicates-folder",
+        help="Folder to move duplicate files to",
+    )
     dedup_parser.set_defaults(func=dedup_command)
 
     # Organize subcommand
@@ -126,6 +163,15 @@ def parse_args(args: List[str]) -> argparse.Namespace:
         "--dry-run",
         action="store_true",
         help="Show what would be done without making changes",
+    )
+    organize_parser.add_argument(
+        "--logging",
+        action="store_true",
+        help="Enable logging mode (logs all operations to CSV)",
+    )
+    organize_parser.add_argument(
+        "--unclassified-folder",
+        help="Folder to move unclassified files to",
     )
     organize_parser.set_defaults(func=organize_command)
 

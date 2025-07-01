@@ -36,4 +36,4 @@ snaptidy-gui = "gui.main:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["snaptidy*"]
+include = ["snaptidy*", "gui*"]
